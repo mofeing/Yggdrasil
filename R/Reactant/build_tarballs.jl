@@ -171,6 +171,12 @@ if [[ "${bb_full_target}" == *linux* ]]; then
         BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_FEATURE_AES=1)
         BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_NEON=1)
         BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_FEATURE_SHA2=1)
+
+        BAZEL_BUILD_FLAGS+=(--define=build_with_mkl=false --define=enable_mkl=false --define=build_with_mkl_aarch64=false)
+        BAZEL_BUILD_FLAGS+=(--@tsl//tsl/framework/contraction:disable_onednn_contraction_kernel=True)
+
+        BAZEL_BUILD_FLAGS+=(--platforms=@//:linux_aarch64)
+        BAZEL_BUILD_FLAGS+=(--crosstool_top=@xla//tools/toolchains/cross_compile/cc:cross_compile_toolchain_suite)
     fi
 fi
 
