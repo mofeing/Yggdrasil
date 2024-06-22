@@ -139,31 +139,39 @@ if [[ "${bb_full_target}" == *darwin* ]]; then
     BAZEL_BUILD_FLAGS+=(--nolegacy_whole_archive)
 fi
 
-
 if [[ "${bb_full_target}" == *linux* ]]; then
-    export CUDA_HOME=${WORKSPACE}/destdir;
-    export PATH=$PATH:$CUDA_HOME/bin
-    export CUDACXX=$CUDA_HOME/bin/nvcc
     sed -i "s/getopts \\"/getopts \\"p/g" /sbin/ldconfig
     mkdir -p .local/bin
     echo "#!/bin/sh" > .local/bin/ldconfig
     echo "" >> .local/bin/ldconfig
     chmod +x .local/bin/ldconfig
     export PATH="`pwd`/.local/bin:$PATH"
-    BAZEL_BUILD_FLAGS+=(--repo_env TF_NEED_CUDA=1)
-    BAZEL_BUILD_FLAGS+=(--repo_env TF_CUDA_VERSION=$CUDA_VERSION)
-    BAZEL_BUILD_FLAGS+=(--repo_env TF_CUDA_PATHS="$CUDA_HOME/cuda,$CUDA_HOME")
-    BAZEL_BUILD_FLAGS+=(--repo_env CUDA_TOOLKIT_PATH=$CUDA_HOME/cuda)
-    BAZEL_BUILD_FLAGS+=(--repo_env CUDNN_INSTALL_PATH=$CUDA_HOME)
-    BAZEL_BUILD_FLAGS+=(--repo_env TENSORRT_INSTALL_PATH=$CUDA_HOME)
-    BAZEL_BUILD_FLAGS+=(--repo_env TF_NCCL_USE_STUB=1)
-    BAZEL_BUILD_FLAGS+=(--action_env TF_CUDA_COMPUTE_CAPABILITIES="sm_50,sm_60,sm_70,sm_80,compute_90")
-    # BAZEL_BUILD_FLAGS+=(--action_env CLANG_CUDA_COMPILER_PATH="/home/wmoses/llvms/llvm16/build/bin/clang")
-    BAZEL_BUILD_FLAGS+=(--crosstool_top=@local_config_cuda//crosstool:toolchain)
-    BAZEL_BUILD_FLAGS+=(--@local_config_cuda//:enable_cuda)
-    BAZEL_BUILD_FLAGS+=(--@xla//xla/python:enable_gpu=true)
-    BAZEL_BUILD_FLAGS+=(--@xla//xla/python:jax_cuda_pip_rpaths=true)
-    BAZEL_BUILD_FLAGS+=(--define=xla_python_enable_gpu=true)
+
+    if [[ "${bb_full_target}" == *86* ]]; then
+        export CUDA_HOME=${WORKSPACE}/destdir;
+        export PATH=$PATH:$CUDA_HOME/bin
+        export CUDACXX=$CUDA_HOME/bin/nvcc
+        BAZEL_BUILD_FLAGS+=(--repo_env TF_NEED_CUDA=1)
+        BAZEL_BUILD_FLAGS+=(--repo_env TF_CUDA_VERSION=$CUDA_VERSION)
+        BAZEL_BUILD_FLAGS+=(--repo_env TF_CUDA_PATHS="$CUDA_HOME/cuda,$CUDA_HOME")
+        BAZEL_BUILD_FLAGS+=(--repo_env CUDA_TOOLKIT_PATH=$CUDA_HOME/cuda)
+        BAZEL_BUILD_FLAGS+=(--repo_env CUDNN_INSTALL_PATH=$CUDA_HOME)
+        BAZEL_BUILD_FLAGS+=(--repo_env TENSORRT_INSTALL_PATH=$CUDA_HOME)
+        BAZEL_BUILD_FLAGS+=(--repo_env TF_NCCL_USE_STUB=1)
+        BAZEL_BUILD_FLAGS+=(--action_env TF_CUDA_COMPUTE_CAPABILITIES="sm_50,sm_60,sm_70,sm_80,compute_90")
+        # BAZEL_BUILD_FLAGS+=(--action_env CLANG_CUDA_COMPILER_PATH="/home/wmoses/llvms/llvm16/build/bin/clang")
+        BAZEL_BUILD_FLAGS+=(--crosstool_top=@local_config_cuda//crosstool:toolchain)
+        BAZEL_BUILD_FLAGS+=(--@local_config_cuda//:enable_cuda)
+        BAZEL_BUILD_FLAGS+=(--@xla//xla/python:enable_gpu=true)
+        BAZEL_BUILD_FLAGS+=(--@xla//xla/python:jax_cuda_pip_rpaths=true)
+        BAZEL_BUILD_FLAGS+=(--define=xla_python_enable_gpu=true)
+    fi
+
+    if [[ "${bb_full_target}" == *aarch64* ]]; then
+        BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_FEATURE_AES=1)
+        BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_NEON=1)
+        BAZEL_BUILD_FLAGS+=(--copt=-D__ARM_FEATURE_SHA2=1)
+    fi
 fi
 
 if [[ "${bb_full_target}" == *freebsd* ]]; then
@@ -245,7 +253,7 @@ end
 platforms = filter(p -> arch(p) != "i686", platforms)
 
 # linux aarch has onednn issues
-platforms = filter(p -> !(arch(p) == "aarch64" && Sys.islinux(p)), platforms)
+# platforms = filter(p -> !(arch(p) == "aarch64" && Sys.islinux(p)), platforms)
 platforms = filter(p -> !(arch(p) == "armv6l" && Sys.islinux(p)), platforms)
 platforms = filter(p -> !(arch(p) == "armv7l" && Sys.islinux(p)), platforms)
 
